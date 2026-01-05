@@ -74,9 +74,14 @@ async function checkLoginStatus() {
       credentials: 'include'
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      return { loggedIn: true, user: data.current_user || null };
+    if (!response.ok) {
+      return { loggedIn: false, user: null, error: `HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+    // Discourse 返回 { current_user: null } 如果未登录
+    if (data.current_user && data.current_user.id) {
+      return { loggedIn: true, user: data.current_user };
     }
     return { loggedIn: false, user: null };
   } catch (error) {
@@ -96,10 +101,10 @@ async function getUserInfo() {
       credentials: 'include'
     });
 
-    if (response.ok) {
-      return await response.json();
+    if (!response.ok) {
+      return null;
     }
-    return null;
+    return await response.json();
   } catch (error) {
     console.error('获取用户信息失败:', error);
     return null;
@@ -117,11 +122,34 @@ async function getBookmarks() {
       credentials: 'include'
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      return { success: true, bookmarks: data.bookmarks || [] };
+    if (!response.ok) {
+      // 尝试解析错误信息
+      let errorMsg = '未登录或无权限';
+      try {
+        const errorData = await response.json();
+        if (errorData.errors) {
+          errorMsg = errorData.errors.join(', ');
+        } else if (errorData.message) {
+          errorMsg = errorData.message;
+        }
+      } catch (e) {
+        // 忽略解析错误
+      }
+      return { success: false, bookmarks: [], error: errorMsg };
     }
-    return { success: false, bookmarks: [], error: '未登录或无权限' };
+
+    const data = await response.json();
+    // Discourse bookmarks API 返回格式
+    let bookmarks = [];
+    if (Array.isArray(data)) {
+      bookmarks = data;
+    } else if (data.bookmarks && Array.isArray(data.bookmarks)) {
+      bookmarks = data.bookmarks;
+    } else if (data.topic_list && data.topic_list.bookmarks) {
+      bookmarks = data.topic_list.bookmarks;
+    }
+
+    return { success: true, bookmarks };
   } catch (error) {
     console.error('获取收藏失败:', error);
     return { success: false, bookmarks: [], error: error.message };
@@ -140,10 +168,22 @@ async function addBookmark(topicId) {
       credentials: 'include'
     });
 
-    if (response.ok) {
-      return { success: true, message: '收藏成功' };
+    if (!response.ok) {
+      let errorMsg = '收藏失败';
+      try {
+        const errorData = await response.json();
+        if (errorData.errors) {
+          errorMsg = errorData.errors.join(', ');
+        } else if (errorData.message) {
+          errorMsg = errorData.message;
+        }
+      } catch (e) {
+        errorMsg = `HTTP ${response.status}`;
+      }
+      return { success: false, message: errorMsg };
     }
-    return { success: false, message: '收藏失败' };
+
+    return { success: true, message: '收藏成功' };
   } catch (error) {
     console.error('添加收藏失败:', error);
     return { success: false, message: error.message };
@@ -158,10 +198,20 @@ async function removeBookmark(topicId) {
       credentials: 'include'
     });
 
-    if (response.ok) {
-      return { success: true, message: '取消收藏成功' };
+    if (!response.ok) {
+      let errorMsg = '取消收藏失败';
+      try {
+        const errorData = await response.json();
+        if (errorData.errors) {
+          errorMsg = errorData.errors.join(', ');
+        }
+      } catch (e) {
+        errorMsg = `HTTP ${response.status}`;
+      }
+      return { success: false, message: errorMsg };
     }
-    return { success: false, message: '取消收藏失败' };
+
+    return { success: true, message: '取消收藏成功' };
   } catch (error) {
     console.error('取消收藏失败:', error);
     return { success: false, message: error.message };

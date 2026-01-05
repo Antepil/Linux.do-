@@ -205,10 +205,13 @@ async function init() {
     const loginStatus = await loginStatusManager.checkStatus();
     if (loginStatus.isLoggedIn) {
       elements.loginStatus.innerHTML = loginStatusManager.showLoggedInStatus();
+      // 同步登录状态到书签管理器
+      bookmarksManager.setLoggedIn(true);
       // 已登录，加载收藏
       await bookmarksManager.loadBookmarks();
     } else {
       elements.loginStatus.innerHTML = '';
+      bookmarksManager.setLoggedIn(false);
     }
 
     // 初始化书签管理器

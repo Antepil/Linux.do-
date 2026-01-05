@@ -355,6 +355,7 @@ window.__toggleRead = (id) => {
 
 window.__toggleBookmark = async (topicId) => {
   const result = await bookmarksManager.toggleBookmark(topicId);
+
   if (result.success) {
     // 刷新列表以更新收藏状态显示
     if (filterBarManager.getSettings().categoryFilter === 'bookmarks') {
@@ -363,12 +364,17 @@ window.__toggleBookmark = async (topicId) => {
         window.location.reload();
       }, 300);
     }
-  } else if (result.error && result.error.includes('未登录')) {
+  } else if (result.error === 'NOT_LOGGED_IN' || (result.error && result.error.toLowerCase().includes('login'))) {
     // 未登录，提示用户
     const loginPrompt = document.getElementById('loginPrompt');
     if (loginPrompt) {
       loginPrompt.innerHTML = loginStatusManager.showLoginPrompt();
       loginPrompt.style.display = 'block';
+
+      // 3秒后自动隐藏
+      setTimeout(() => {
+        loginPrompt.style.display = 'none';
+      }, 3000);
     }
   }
 };

@@ -11,6 +11,7 @@ import { formatTime, escapeHtml } from '../utils/formatter.js';
  */
 export function createBookmarksManager(elements, services) {
   let bookmarkedTopicIds = new Set();
+  let isLoggedIn = false;
   let onBookmarkChange = null;
 
   return {
@@ -22,9 +23,20 @@ export function createBookmarksManager(elements, services) {
     },
 
     /**
+     * 设置登录状态
+     */
+    setLoggedIn(loggedIn) {
+      isLoggedIn = loggedIn;
+    },
+
+    /**
      * 加载用户收藏
      */
     async loadBookmarks() {
+      if (!isLoggedIn) {
+        return new Set();
+      }
+
       const result = await services.getBookmarks();
       if (result.success && result.bookmarks) {
         // 提取收藏的主题ID
@@ -46,6 +58,10 @@ export function createBookmarksManager(elements, services) {
      * 切换收藏状态
      */
     async toggleBookmark(topicId) {
+      if (!isLoggedIn) {
+        return { success: false, error: 'NOT_LOGGED_IN' };
+      }
+
       if (bookmarkedTopicIds.has(topicId)) {
         // 取消收藏
         const result = await services.removeBookmark(topicId);
@@ -80,7 +96,7 @@ export function createBookmarksManager(elements, services) {
     createBookmarkButton(topicId, compact = false) {
       const isBookmarked = bookmarkedTopicIds.has(topicId);
       const title = isBookmarked ? '取消收藏' : '收藏';
-      const icon = ICONS.bookmark;
+      const icon = isBookmarked ? ICONS.bookmark : ICONS.bookmarkOutline;
 
       return `
         <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}"
