@@ -1,0 +1,20 @@
+{
+  "name": "linux-do-stream-refactor",
+  "version": "4.6.0",
+  "description": "Chrome extension for browsing Linux.do community topics in a side panel - Refactored version",
+  "scripts": {
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "chrome-extension",
+    "linux-do",
+    "sidepanel",
+    "manifest-v3"
+  ],
+  "author": "Antepil",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Antepil/linux-do-stream-extension.git"
+  }
+}
